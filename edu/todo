@@ -1,0 +1,193 @@
+1. Describe Initial Setup
+
+==> According to Offical Doc
+
+===========================================================================
+
+2. Describe Page Concept & Basic Routing Concept
+Inertia::render('Index');
+
+
+===========================================================================
+
+3. Passing Data From Controller To Page
+
+$JSON=['name' => 'Rabbil','age'=>38,'city'=>'Dhaka'];
+return Inertia::render('Page1',['data'=>$JSON]);
+
+<script setup>
+const props = defineProps({data: Object})
+</script>
+
+<template>
+    {{JSON.stringify(props.data)}}
+</template>
+
+
+===========================================================================
+
+
+4. Passing Data From Controller To Component
+
+$JSON=['name' => 'Rabbil','age'=>38,'city'=>'Dhaka'];
+return Inertia::render('Page1',['data'=>$JSON]);
+
+===Parent Component
+<script setup>
+const props = defineProps({data: Object})
+</script>
+<template>
+    <Child1 :data="props.data"/>
+</template>
+
+===Child Component
+<script setup>
+const props = defineProps({data: Object})
+</script>
+<template>
+    {{JSON.stringify(props.data)}}
+</template>
+
+
+
+===========================================================================
+
+4. Passing Data From Controller To Root Blade View Working With Title & meta
+
+$meta=['title' => 'This is title'];
+return Inertia::render('Page2')->withViewData(['meta' => $meta]);
+
+<title>{{$meta['title']}}</title>
+
+===========================================================================
+
+5. Working With Flash Message & Share Data
+
+# HandleInertiaRequests Middleware
+
+    public function share(Request $request): array
+    {
+        return array_merge(parent::share($request),[
+            'flash' => [
+                'message' => fn () => $request->session()->pull('message'),
+                'status' => fn () => $request->session()->pull('status'),
+                'share_data' => fn () => $request->session()->pull('share_data'),
+            ],
+        ]);
+    }
+
+
+#  Inside Controller
+$SharedData = ['message'=>'Test Message ','status' => true,'share_data'=>"This is Shared Data"];
+return Inertia::render('Page3')->with($SharedData);
+
+
+# Catch Data From Parent Component
+
+<script setup>
+import NavBar from "@/Component/NavBar.vue";
+import { usePage } from '@inertiajs/vue3'
+import Child3 from "../Component/Child3.vue";
+const page = usePage()
+</script>
+
+<template>
+    <NavBar/>
+    <h1>From Parent Component</h1>
+    <h6>Message: {{page.props.message}}</h6>
+    <h6>Status: {{page.props.status}}</h6>
+    <h6>Shared Data: {{page.props.share_data}}</h6>
+    <Child3/>
+</template>
+
+
+# Catch Data From Child Component
+
+<script setup>
+import { usePage } from '@inertiajs/vue3'
+const page = usePage()
+</script>
+<template>
+    <h1>From Child Component</h1>
+    <h6>Message: {{page.props.message}}</h6>
+    <h6>Status: {{page.props.status}}</h6>
+    <h6>Shared Data: {{page.props.share_data}}</h6>
+</template>
+
+
+===========================================================================
+
+6. Working With Form Post Back
+
+# Inside Controller
+
+    function PostBackRequest(Request $request){
+        $JsonObject= $request->input();
+        $data = ['message'=>'Submit Success','status' => true,'share_data'=>$JsonObject];
+        return redirect()->route('Page4')->with($data);
+    }
+
+# Parent Component
+
+<script setup>
+import { usePage } from '@inertiajs/vue3'
+import {useForm} from '@inertiajs/vue3'
+import NavBar from "@/Component/NavBar.vue";
+const page = usePage()
+const form = useForm({first_name: "", last_name: "", email: ""})
+
+function submit() {
+    form.post('/PostBackRequest', {
+        preserveScroll: true,
+        onSuccess: () =>{
+                alert(page.props.flash.message)
+                alert(JSON.stringify(page.props.flash.share_data))
+            form.reset()
+        }
+    })
+}
+</script>
+
+<template>
+    <NavBar/>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <h3 class="mb-3">Form Post Back</h3>
+                <form @submit.prevent="submit">
+                    <label for="first_name">First name:</label>
+                    <input class="form-control" id="first_name" v-model="form.first_name" />
+                    <label for="last_name">Last name:</label>
+                    <input class="form-control" id="last_name" v-model="form.last_name" />
+                    <label for="email">Email:</label>
+                    <input class="form-control mb-3" id="email" v-model="form.email" />
+                    <button class="btn btn-primary w-100" type="submit">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</template>
+
+
+===================================================
+
+7. Working With Title & meta Inside Vue JS
+
+$meta=['title' => 'Title','description'=>"description"];
+return Inertia::render('Page5',['meta'=>$meta]);
+
+<script setup>
+import { Head } from '@inertiajs/vue3'
+const props = defineProps({meta: Object})
+</script>
+
+
+<template>
+    <NavBar/>
+    <Head>
+        <title>{{props.meta.title}}</title>
+        <meta name="description" content="{{props.meta.description}}">
+    </Head>
+</template>
+
+
